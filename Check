@@ -1,0 +1,64 @@
+from django.shortcuts import render, redirect
+from django.contrib.auth import authenticate, login, logout
+from django.contrib import messages
+
+def user_login(request):
+    if request.method == 'POST':
+        username = request.POST['username']
+        password = request.POST['password']
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            return redirect('dashboard')  # Redirect to the dashboard
+        else:
+            messages.error(request, 'Invalid username or password')
+    return render(request, 'login.html')
+
+def user_logout(request):
+    logout(request)
+    return redirect('login')  # Redirect to the login page
+
+
+
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+from .models import Bike, RideHistory
+
+@login_required
+def dashboard(request):
+    # Get the logged-in user's bikes and their data
+    bikes = Bike.objects.filter(user=request.user)
+    ride_history = RideHistory.objects.filter(bike__user=request.user)
+    
+    context = {
+        'bikes': bikes,
+        'ride_history': ride_history,
+    }
+    return render(request, 'dashboard.html', context)
+
+
+
+
+
+
+from django.db import models
+from django.contrib.auth.models import User
+
+class Bike(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    name = models.CharField(max_length=50)
+    speed = models.FloatField()
+    payload = models.FloatField()
+    battery_status = models.FloatField()
+    location = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class RideHistory(models.Model):
+    bike = models.ForeignKey(Bike, on_delete=models.CASCADE)
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+    distance_traveled = models.FloatField()
+    overspeed_events = models.IntegerField()
+    overload_events = models.IntegerField()
+
+
